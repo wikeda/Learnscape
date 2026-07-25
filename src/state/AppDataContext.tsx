@@ -98,7 +98,7 @@ export function AppDataProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<Ctx>(() => {
     const activeContent = activeContentOf(data);
-    const cp = data.byContent[data.activeContentId] ?? { progress: {}, chapterRounds: {} };
+    const cp = data.byContent[data.activeContentId] ?? emptyCP();
     return {
       data,
       contents: allContents(data),
