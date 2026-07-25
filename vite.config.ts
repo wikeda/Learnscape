@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
-        name: '世界史 一問一答',
-        short_name: '世界史一問一答',
+        name: 'Learnscape',
+        short_name: 'Learnscape',
         start_url: '.',
         display: 'standalone',
         background_color: '#f4f6fa',

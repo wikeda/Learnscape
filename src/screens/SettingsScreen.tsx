@@ -37,7 +37,7 @@ export function SettingsScreen() {
     const blob = new Blob([exportJson(data)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `whq-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.href = url; a.download = `learnscape-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click(); URL.revokeObjectURL(url);
   }
   function doImport(e: React.ChangeEvent<HTMLInputElement>) {
