@@ -1,6 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppData } from '../state/AppDataContext';
-import { useQuestions } from '../hooks/useQuestions';
 import { countStates, masteryPct } from '../domain/aggregate';
 import { Confetti } from '../components/Confetti';
 import { StackedBarChart } from '../components/StackedBarChart';
@@ -8,23 +7,22 @@ import { StackedBarChart } from '../components/StackedBarChart';
 interface ResultState {
   chapter: string; mode: string; total: number;
   tally: { known: number; unsure: number; failed: number };
-  failedNos: number[]; beforePct: number; streakBefore: number;
+  failedIds: string[]; beforePct: number; streakBefore: number;
 }
 
 export function ResultScreen() {
   const nav = useNavigate();
-  const { data } = useAppData();
-  const questions = useQuestions();
+  const { data, questions, progress, chapterRounds } = useAppData();
   const st = (useLocation().state ?? null) as ResultState | null;
 
   if (!st) { nav('/'); return null; }
 
   const isAll = st.chapter === 'all';
-  const afterPct = isAll ? 0 : masteryPct(countStates(questions, data.progress, st.chapter));
+  const afterPct = isAll ? 0 : masteryPct(countStates(questions, progress, st.chapter));
   const delta = afterPct - st.beforePct;
   const streakUp = data.streak.current - st.streakBefore;
   const title = isAll ? 'あやふや復習' : st.chapter;
-  const rounds = isAll ? [] : (data.chapterRounds[st.chapter] ?? []);
+  const rounds = isAll ? [] : (chapterRounds[st.chapter] ?? []);
   const chapterTotal = isAll ? 0 : questions.filter((q) => q.chapter === st.chapter).length;
 
   return (
@@ -68,10 +66,10 @@ export function ResultScreen() {
           onClick={() => nav(isAll ? '/study/unsure/all' : `/study/chapter/${encodeURIComponent(st.chapter)}`, { replace: true })}>
           🔁 もう一度挑戦
         </button>
-        {st.failedNos.length > 0 && (
-          <button onClick={() => nav(`/study/failed/${encodeURIComponent(st.chapter)}`, { replace: true, state: { failedNos: st.failedNos } })}
+        {st.failedIds.length > 0 && (
+          <button onClick={() => nav(`/study/failed/${encodeURIComponent(st.chapter)}`, { replace: true, state: { failedIds: st.failedIds } })}
             style={{ width: '100%', background: 'var(--surface)', border: '1px solid #f2e2b0', color: '#c98a00', borderRadius: 14, padding: 11, fontWeight: 800, marginBottom: 9 }}>
-            ⚡ できなかった{st.failedNos.length}問だけ復習
+            ⚡ できなかった{st.failedIds.length}問だけ復習
           </button>
         )}
         <button onClick={() => nav('/')} style={{ width: '100%', background: 'none', border: 'none', color: 'var(--muted)', padding: 8, fontWeight: 700 }}>

@@ -39,9 +39,9 @@ describe('hapticPattern', () => {
 });
 
 describe('hapticEventForSwipe', () => {
-  const fresh = initialProgress(1);
-  const almost: QuestionProgress = { no: 1, state: 'unsure', knownStreak: 1, lastStudiedAt: 1 };
-  const mastered: QuestionProgress = { no: 1, state: 'mastered', knownStreak: 2, lastStudiedAt: 1 };
+  const fresh = initialProgress('T0001');
+  const almost: QuestionProgress = { id: 'T0001', state: 'unsure', knownStreak: 1, lastStudiedAt: 1 };
+  const mastered: QuestionProgress = { id: 'T0001', state: 'mastered', knownStreak: 2, lastStudiedAt: 1 };
 
   it('まだマスターに届かない「覚えた」は known', () => {
     expect(hapticEventForSwipe(fresh, 'known', 2)).toBe('known');

@@ -7,7 +7,10 @@ beforeEach(() => localStorage.clear());
 describe('storage', () => {
   it('空なら既定を返す', () => {
     const d = loadAppData();
-    expect(d.version).toBe(1);
+    expect(d.version).toBe(2);
+    expect(d.activeContentId).toBe('world-history');
+    expect(d.importedContents).toEqual([]);
+    expect(d.byContent).toEqual({});
     expect(d.settings.sessionSize).toBe(10);
     expect(d.settings.theme).toBe('dark');
     expect(d.settings.accent).toBe('#20b0b0');
@@ -15,18 +18,38 @@ describe('storage', () => {
     expect(d.settings.masterThreshold).toBe(2);
   });
 
+  it('defaultAppData は v2 形', () => {
+    const d = defaultAppData();
+    expect(d.version).toBe(2);
+    expect(d.activeContentId).toBe('world-history');
+    expect(d.importedContents).toEqual([]);
+    expect(d.byContent).toEqual({});
+  });
+
   it('保存→読み込みで往復', () => {
     const d = defaultAppData();
-    d.progress[1] = { no: 1, state: 'mastered', knownStreak: 2, lastStudiedAt: 5 };
+    d.byContent['world-history'] = {
+      progress: { S0001: { id: 'S0001', state: 'mastered', knownStreak: 2, lastStudiedAt: 5 } },
+      chapterRounds: {},
+    };
     saveAppData(d);
-    expect(loadAppData().progress[1].state).toBe('mastered');
+    expect(loadAppData().byContent['world-history'].progress.S0001.state).toBe('mastered');
   });
 
   it('欠けたキーは既定でマージ', () => {
-    localStorage.setItem('whq:data', JSON.stringify({ version: 1, progress: {} }));
+    localStorage.setItem('learnscape:data', JSON.stringify({ version: 2, byContent: {} }));
     const d = loadAppData();
     expect(d.settings).toBeDefined();
     expect(d.streak.current).toBe(0);
+  });
+
+  it('旧v1スキーマは破棄して既定を返す', () => {
+    localStorage.setItem('learnscape:data', JSON.stringify({ version: 1, progress: {}, chapterRounds: {} }));
+    const d = loadAppData();
+    expect(d.version).toBe(2);
+    expect(d.activeContentId).toBe('world-history');
+    expect(d.importedContents).toEqual([]);
+    expect(d.byContent).toEqual({});
   });
 
   it('export→import で復元', () => {

@@ -1,7 +1,7 @@
 import type { QuestionProgress, SwipeResult, MasterThreshold } from './types';
 
-export function initialProgress(no: number): QuestionProgress {
-  return { no, state: 'unanswered', knownStreak: 0, lastStudiedAt: null };
+export function initialProgress(id: string): QuestionProgress {
+  return { id, state: 'unanswered', knownStreak: 0, lastStudiedAt: null };
 }
 
 export function applySwipe(

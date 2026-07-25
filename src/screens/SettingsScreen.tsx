@@ -4,6 +4,7 @@ import { exportJson, importJson } from '../storage/storage';
 import { defaultAppData } from '../storage/schema';
 import type { Theme, Order, SessionSize } from '../domain/types';
 import { isHapticSupported } from '../hooks/useHaptic';
+import { parseContent } from '../domain/content';
 
 const ACCENTS = ['#3b6cff', '#3f9e5a', '#7a3bff', '#f0993c', '#e5679a', '#20b0b0'];
 const SIZES: { v: SessionSize; label: string }[] = [
@@ -11,15 +12,32 @@ const SIZES: { v: SessionSize; label: string }[] = [
 ];
 
 export function SettingsScreen() {
-  const { data, updateSettings, replaceData } = useAppData();
+  const { data, updateSettings, replaceData, contents, importContent, deleteContent } = useAppData();
   const s = data.settings;
   const fileRef = useRef<HTMLInputElement>(null);
+  const contentFileRef = useRef<HTMLInputElement>(null);
+
+  function doImportContent(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = ''; // 同一ファイル再選択を許可
+    if (!f) return;
+    f.text().then((t) => {
+      let raw: unknown;
+      try { raw = JSON.parse(t); }
+      catch { alert('JSONの読み込みに失敗しました（形式が不正です）'); return; }
+      const r = parseContent(raw);
+      if (!r.ok || !r.content) { alert(`コンテンツの読み込みに失敗しました：\n${r.error}`); return; }
+      if (r.content.builtin) { alert('初期搭載と競合するため読み込めません'); return; }
+      importContent(r.content);
+      alert(`「${r.content.title}」を読み込みました（${r.content.questions.length}問）`);
+    });
+  }
 
   function doExport() {
     const blob = new Blob([exportJson(data)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `whq-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.href = url; a.download = `learnscape-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click(); URL.revokeObjectURL(url);
   }
   function doImport(e: React.ChangeEvent<HTMLInputElement>) {
@@ -86,6 +104,24 @@ export function SettingsScreen() {
         </Row>
       </Section>
 
+      <Section title="コンテンツ">
+        <div onClick={() => contentFileRef.current?.click()} style={rowBtn}>コンテンツを読み込む（JSON）</div>
+        {contents.map((c, i) => (
+          <div key={c.id} style={{ padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 8,
+            borderBottom: i < contents.length - 1 ? '1px solid var(--border)' : 'none' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13 }}>{c.title}</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)' }}>{c.questions.length}問{c.builtin ? '・初期搭載' : ''}</div>
+            </div>
+            {!c.builtin && (
+              <span onClick={() => { if (window.confirm(`「${c.title}」を削除しますか？（進捗も削除されます）`)) deleteContent(c.id); }}
+                style={{ fontSize: 12, color: '#d23b3b', cursor: 'pointer' }}>削除</span>
+            )}
+          </div>
+        ))}
+        <input ref={contentFileRef} type="file" accept="application/json,.json" hidden onChange={doImportContent} />
+      </Section>
+
       <Section title="データ">
         <div onClick={doExport} style={rowBtn}>進捗をエクスポート（バックアップ）</div>
         <div onClick={() => fileRef.current?.click()} style={rowBtn}>進捗をインポート（復元）</div>
@@ -93,7 +129,7 @@ export function SettingsScreen() {
         <input ref={fileRef} type="file" accept="application/json" hidden onChange={doImport} />
       </Section>
 
-      <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--muted)', margin: '16px 0' }}>世界史 一問一答 ・ v1.2.0</div>
+      <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--muted)', margin: '16px 0' }}>Learnscape ・ v1.3.0</div>
     </div>
   );
 }

@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useQuestions } from '../hooks/useQuestions';
 import { useAppData } from '../state/AppDataContext';
 import { BackButton } from '../components/BackButton';
 import { Flashcard } from '../components/Flashcard';
-import { buildChapterSession, buildUnsureSession, pickByNumbers } from '../domain/session';
+import { buildChapterSession, buildUnsureSession, pickByIds } from '../domain/session';
 import { countStates, masteryPct } from '../domain/aggregate';
 import type { SwipeResult, Counts } from '../domain/types';
 import { useHaptic } from '../hooks/useHaptic';
@@ -13,8 +12,7 @@ import { initialProgress } from '../domain/mastery';
 
 export function StudyScreen() {
   const { mode = 'chapter', chapter = '' } = useParams();
-  const questions = useQuestions();
-  const { data, recordAnswer, recordRound } = useAppData();
+  const { data, questions, progress, chapterRounds, recordAnswer, recordRound } = useAppData();
   const navigate = useNavigate();
   const loc = useLocation();
   const fire = useHaptic();
@@ -24,14 +22,14 @@ export function StudyScreen() {
     const opts = { order: data.settings.order, sessionSize: data.settings.sessionSize };
     let session;
     if (mode === 'failed') {
-      const nos = (loc.state as { failedNos?: number[] } | null)?.failedNos ?? [];
-      session = pickByNumbers(questions, nos);
+      const ids = (loc.state as { failedIds?: string[] } | null)?.failedIds ?? [];
+      session = pickByIds(questions, ids);
     } else if (mode === 'unsure') {
-      session = buildUnsureSession(questions, data.progress, chapter, opts);
+      session = buildUnsureSession(questions, progress, chapter, opts);
     } else {
-      session = buildChapterSession(questions, data.progress, chapter, { ...opts, maintenanceRatio: 0.2 });
+      session = buildChapterSession(questions, progress, chapter, { ...opts, maintenanceRatio: 0.2 });
     }
-    const beforePct = chapter === 'all' ? 0 : masteryPct(countStates(questions, data.progress, chapter));
+    const beforePct = chapter === 'all' ? 0 : masteryPct(countStates(questions, progress, chapter));
     const streakBefore = data.streak.current;
     return { session, beforePct, streakBefore };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -49,16 +47,16 @@ export function StudyScreen() {
     finished.current = true;
     fire('complete');
     if (chapter !== 'all') {
-      const counts: Counts = countStates(questions, data.progress, chapter);
-      const round = (data.chapterRounds[chapter]?.length ?? 0) + 1;
+      const counts: Counts = countStates(questions, progress, chapter);
+      const round = (chapterRounds[chapter]?.length ?? 0) + 1;
       recordRound(chapter, { round, timestamp: Date.now(), counts, masteryPct: masteryPct(counts) });
     }
-    const failedNos = session.map((s) => s.no).filter((no) => data.progress[no]?.state === 'failed');
+    const failedIds = session.map((s) => s.id).filter((id) => progress[id]?.state === 'failed');
     navigate('/result', {
       replace: true,
       state: {
         chapter, mode, total: session.length, tally: tally.current,
-        failedNos, beforePct: initial.beforePct, streakBefore: initial.streakBefore,
+        failedIds, beforePct: initial.beforePct, streakBefore: initial.streakBefore,
       },
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,10 +75,10 @@ export function StudyScreen() {
     // navigator.vibrate は再生中のパターンをキューせず置き換えるため、
     // 続けて鳴らすと判定側の振動が途中で切れてしまう。
     if (!isLast) {
-      const before = data.progress[q.no] ?? initialProgress(q.no);
+      const before = progress[q.id] ?? initialProgress(q.id);
       fire(hapticEventForSwipe(before, result, data.settings.masterThreshold));
     }
-    recordAnswer(q.no, result);
+    recordAnswer(q.id, result);
     tally.current[result]++;
     if (isLast) setFinishing(true);
     else setIdx(next);
@@ -104,7 +102,7 @@ export function StudyScreen() {
           <span style={{ fontSize: 27, fontWeight: 700, color: 'var(--muted)', marginLeft: 7 }}>/ {session.length}</span>
         </div>
         {/* key を問題ごとに変えてカードを作り直す＝解答の表示状態を確実にリセット（一瞬の解答表示を防止） */}
-        <Flashcard key={q.no} question={q} onJudge={judge} />
+        <Flashcard key={q.id} question={q} onJudge={judge} />
       </div>
 
       <div style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)' }}>
