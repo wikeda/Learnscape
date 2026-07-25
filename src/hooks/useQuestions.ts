@@ -1,8 +1,6 @@
-import questionsJson from '../data/questions.json';
 import type { Question } from '../domain/types';
-
-const QUESTIONS = questionsJson as Question[];
+import { useAppData } from '../state/AppDataContext';
 
 export function useQuestions(): Question[] {
-  return QUESTIONS;
+  return useAppData().questions;
 }
