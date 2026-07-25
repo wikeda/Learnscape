@@ -305,7 +305,7 @@ git commit -m "feat: コンテンツJSON検証モジュールと新型定義を�
 - Create: `scripts/build_contents.py`
 - Create（生成物）: `src/data/contents/japanese-history.json`, `src/data/contents/world-history.json`
 
-前提: 変換元Excelは `C:/Users/500886/Downloads/大学入試_日本史_時代別問題集_1500問.xlsx` と `..._世界史_..._2100問.xlsx`。`問題`シートと`解答・解説`シートを問題IDで結合する。
+前提: 変換元Excelは `C:/Users/500886/Downloads/大学入試_日本史_時代別問題集_1500問_修正版.xlsx`（解答修正済みの最新版）と `..._世界史_..._2100問.xlsx`。`問題`シートと`解答・解説`シートを問題IDで結合する。
 
 - [ ] **Step 1: 変換スクリプトを作成**
 
@@ -323,7 +323,8 @@ OUT_DIR = os.path.join(ROOT, 'src', 'data', 'contents')
 DL = r'C:/Users/500886/Downloads'
 
 JOBS = [
-    dict(xlsx=f'{DL}/大学入試_日本史_時代別問題集_1500問.xlsx', id='japanese-history', title='日本史'),
+    # 日本史は解答修正済みの「修正版」を最新として使用する
+    dict(xlsx=f'{DL}/大学入試_日本史_時代別問題集_1500問_修正版.xlsx', id='japanese-history', title='日本史'),
     dict(xlsx=f'{DL}/大学入試_世界史_時代別問題集_2100問.xlsx', id='world-history', title='世界史'),
 ]
 
