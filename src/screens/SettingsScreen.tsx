@@ -129,7 +129,7 @@ export function SettingsScreen() {
         <input ref={fileRef} type="file" accept="application/json" hidden onChange={doImport} />
       </Section>
 
-      <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--muted)', margin: '16px 0' }}>Learnscape ・ v1.3.3</div>
+      <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--muted)', margin: '16px 0' }}>Learnscape ・ v1.3.4</div>
     </div>
   );
 }
