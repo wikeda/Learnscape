@@ -80,26 +80,37 @@ export function Flashcard({ question, onJudge }: Props) {
 
       <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px dashed var(--border)' }}>
         <div style={{ fontSize: 10, letterSpacing: '.08em', color: 'var(--muted)' }}>解答</div>
-        <div style={{
-          fontSize: 24, fontWeight: 700, marginTop: 6, color: 'var(--accent)',
-          filter: `blur(${9 - 9 * answerReveal}px)`, opacity: 0.25 + 0.75 * answerReveal,
-          transition: trans,
-        }}>{question.answer}</div>
+
+        {/* 解答: 初期は全幅の目隠しバーで完全に隠す（文字数・形も漏らさない）。↓で徐々に鮮明化 */}
+        <div style={{ position: 'relative', marginTop: 6 }}>
+          <div style={{
+            fontSize: 24, fontWeight: 700, color: 'var(--accent)',
+            filter: `blur(${10 - 10 * answerReveal}px)`, transition: trans,
+          }}>{question.answer}</div>
+          <div aria-hidden style={{
+            position: 'absolute', inset: '-3px -5px', borderRadius: 9,
+            background: 'var(--border)', opacity: 1 - answerReveal,
+            transition: trans, pointerEvents: 'none',
+          }} />
+        </div>
 
         {(question.explanation || question.point) && (
-          <div style={{
-            marginTop: 10,
-            filter: `blur(${7 - 7 * detailReveal}px)`, opacity: 0.15 + 0.85 * detailReveal,
-            transition: trans,
-          }}>
-            {question.explanation && (
-              <div style={{ fontSize: 13, lineHeight: 1.65, color: 'var(--text)' }}>{question.explanation}</div>
-            )}
-            {question.point && (
-              <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--muted)', marginTop: 6 }}>
-                💡 {question.point}
-              </div>
-            )}
+          <div style={{ position: 'relative', marginTop: 10 }}>
+            <div style={{ filter: `blur(${8 - 8 * detailReveal}px)`, transition: trans }}>
+              {question.explanation && (
+                <div style={{ fontSize: 13, lineHeight: 1.65, color: 'var(--text)' }}>{question.explanation}</div>
+              )}
+              {question.point && (
+                <div style={{ fontSize: 12, lineHeight: 1.6, color: 'var(--muted)', marginTop: 6 }}>
+                  💡 {question.point}
+                </div>
+              )}
+            </div>
+            <div aria-hidden style={{
+              position: 'absolute', inset: '-3px -5px', borderRadius: 9,
+              background: 'var(--border)', opacity: 1 - detailReveal,
+              transition: trans, pointerEvents: 'none',
+            }} />
           </div>
         )}
       </div>
