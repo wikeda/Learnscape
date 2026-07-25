@@ -16,6 +16,31 @@ export function HomeScreen() {
   const overall = overallMastery(questions, progress);
   const completed = chapters.filter((c) => masteryPct(countStates(questions, progress, c)) >= 100).length;
   const unsureCount = Object.values(progress).filter((p) => p.state === 'unsure').length;
+  const showSections = data.settings.showSections;
+
+  function tile(c: string) {
+    const pct = masteryPct(countStates(questions, progress, c));
+    const bg = masteryColor(pct);
+    const textColor = pct >= 100 ? '#5a3d00' : pct === 0 ? '#5a6376' : '#fff';
+    return (
+      <div key={c} onClick={() => nav(`/chapter/${encodeURIComponent(c)}`)}
+        style={{ background: bg, borderRadius: 11, padding: '8px 4px', textAlign: 'center', color: textColor,
+          cursor: 'pointer', minHeight: 62, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ fontSize: 8.5, lineHeight: 1.15, opacity: 0.95, wordBreak: 'break-word' }}>{c}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, marginTop: 3, lineHeight: 1 }}>
+          {pct >= 100 ? '🏆' : <>{pct}<span style={{ fontSize: 11, opacity: 0.75 }}>%</span></>}
+        </div>
+      </div>
+    );
+  }
+
+  function grid(chs: string[]) {
+    return (
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 7 }}>
+        {chs.map(tile)}
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: 16 }}>
@@ -46,28 +71,16 @@ export function HomeScreen() {
         </div>
       )}
 
-      {structure.map((group) => (
-        <div key={group.section} style={{ marginTop: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', margin: '0 2px 8px' }}>{group.section}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 7 }}>
-            {group.chapters.map((c) => {
-              const pct = masteryPct(countStates(questions, progress, c));
-              const bg = masteryColor(pct);
-              const textColor = pct >= 100 ? '#5a3d00' : pct === 0 ? '#5a6376' : '#fff';
-              return (
-                <div key={c} onClick={() => nav(`/chapter/${encodeURIComponent(c)}`)}
-                  style={{ background: bg, borderRadius: 11, padding: '8px 4px', textAlign: 'center', color: textColor,
-                    cursor: 'pointer', minHeight: 62, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontSize: 8.5, lineHeight: 1.15, opacity: 0.95, wordBreak: 'break-word' }}>{c}</div>
-                  <div style={{ fontSize: 22, fontWeight: 800, marginTop: 3, lineHeight: 1 }}>
-                    {pct >= 100 ? '🏆' : <>{pct}<span style={{ fontSize: 11, opacity: 0.75 }}>%</span></>}
-                  </div>
-                </div>
-              );
-            })}
+      {showSections ? (
+        structure.map((group) => (
+          <div key={group.section} style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', margin: '0 2px 8px' }}>{group.section}</div>
+            {grid(group.chapters)}
           </div>
-        </div>
-      ))}
+        ))
+      ) : (
+        <div style={{ marginTop: 16 }}>{grid(chapters)}</div>
+      )}
 
       {pickerOpen && (
         <ContentPicker

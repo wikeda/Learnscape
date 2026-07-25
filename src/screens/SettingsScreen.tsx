@@ -74,6 +74,14 @@ export function SettingsScreen() {
             ))}
           </div>
         </Row>
+        <Row label="区分表示">
+          <Segmented<boolean> value={s.showSections}
+            options={[[true, 'ON'], [false, 'OFF']]}
+            onChange={(showSections) => updateSettings({ showSections })} />
+          <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 8 }}>
+            ホーム・成績で区分（時代など）の見出しを表示します
+          </div>
+        </Row>
       </Section>
 
       <Section title="学習">
@@ -129,7 +137,7 @@ export function SettingsScreen() {
         <input ref={fileRef} type="file" accept="application/json" hidden onChange={doImport} />
       </Section>
 
-      <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--muted)', margin: '16px 0' }}>Learnscape ・ v1.3.5</div>
+      <div style={{ textAlign: 'center', fontSize: 10, color: 'var(--muted)', margin: '16px 0' }}>Learnscape ・ v1.3.6</div>
     </div>
   );
 }

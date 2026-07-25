@@ -34,6 +34,7 @@ export type MasterThreshold = 1 | 2;
 export interface Settings {
   theme: Theme; accent: string; order: Order; sessionSize: SessionSize;
   masterThreshold: MasterThreshold; soundEnabled: boolean; hapticEnabled: boolean;
+  showSections: boolean;   // 区分(section)見出しをホーム/成績で表示するか
 }
 
 export interface Content {
