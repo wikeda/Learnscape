@@ -1,9 +1,35 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { AppDataProvider } from '../state/AppDataContext';
-import { StudyScreen } from './StudyScreen';
+import type { Content, Question } from '../domain/types';
 import { HAPTIC_PATTERNS } from '../domain/haptics';
+
+// テスト用の固定コンテンツ（実データの章構成に依存しないよう差し替える）。
+// 章の総問題数は 30 とし、既存コメントの maintenanceRatio 計算
+// （floor(29 * 0.2) = 5）と整合させる。
+const { TEST_CONTENT } = vi.hoisted(() => {
+  function q(n: number, question: string, answer: string): Question {
+    const id = `T${String(n).padStart(4, '0')}`;
+    return { id, section: '区分', chapter: '古代オリエント', chapterNo: 1, question, answer };
+  }
+  const questions: Question[] = [
+    q(1, 'ラテン語で「日の昇るところ」を意味する語は？', 'オリエント'),
+    q(2, 'ティグリス・ユーフラテス川流域に成立した文明は？', 'メソポタミア'),
+    ...Array.from({ length: 28 }, (_, i) => q(i + 3, `問題文${i + 3}`, `解答${i + 3}`)),
+  ];
+  const TEST_CONTENT = { schemaVersion: 1, id: 'world-history', title: '世界史', builtin: true, questions };
+  return { TEST_CONTENT };
+});
+
+vi.mock('../data/contents', () => ({
+  BUILTIN_CONTENTS: [TEST_CONTENT],
+  DEFAULT_CONTENT_ID: 'world-history',
+  allContents: (data: { importedContents: Content[] }) => [TEST_CONTENT as Content, ...data.importedContents],
+  activeContentOf: (data: { activeContentId: string; importedContents: Content[] }) => {
+    const all = [TEST_CONTENT as Content, ...data.importedContents];
+    return all.find((c) => c.id === data.activeContentId) ?? all[0];
+  },
+}));
 
 // hapticEventForSwipe を spy 化する。HAPTIC_PATTERNS.mastered と .known は
 // どちらも [12] で同一のため、vibrate に渡る引数だけを見るテストでは
@@ -15,8 +41,11 @@ vi.mock('../domain/haptics', async (importOriginal) => {
   return { ...actual, hapticEventForSwipe: vi.fn(actual.hapticEventForSwipe) };
 });
 import { hapticEventForSwipe } from '../domain/haptics';
+import { AppDataProvider } from '../state/AppDataContext';
+import { StudyScreen } from './StudyScreen';
 
 const vibrate = vi.fn();
+const STORAGE_KEY = 'learnscape:data';
 
 beforeEach(() => {
   localStorage.clear();
@@ -30,8 +59,14 @@ afterEach(() => {
 });
 
 /** 部分的なデータを流し込む。足りない項目は mergeDefaults が既定値で埋める */
-function seed(settings: Record<string, unknown>, progress: Record<number, unknown> = {}) {
-  localStorage.setItem('whq:data', JSON.stringify({ settings, progress }));
+function seed(settings: Record<string, unknown>, progressById: Record<string, unknown> = {}) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    version: 2,
+    activeContentId: 'world-history',
+    importedContents: [],
+    byContent: { 'world-history': { progress: progressById, chapterRounds: {} } },
+    settings,
+  }));
 }
 
 /** 文字列パスに加えて、failed モードで使う { pathname, state } 形式も受け付ける */
@@ -87,10 +122,10 @@ describe('StudyScreen の振動', () => {
     // 「イベントの出し分け」までは検証できない。その分岐は Task 2 の
     // hapticEventForSwipe のドメインテストが守っている。
     // ここではマスター到達時にも正しく振動が鳴ることだけを確認する。
-    // No.1 を「あと1回」の状態にしておく（章の先頭問題なので sequential で必ず1問目に出る）
+    // T0001 を「あと1回」の状態にしておく（章の先頭問題なので sequential で必ず1問目に出る）
     seed(
       { order: 'sequential', sessionSize: 3, hapticEnabled: true, masterThreshold: 2 },
-      { 1: { no: 1, state: 'unsure', knownStreak: 1, lastStudiedAt: 1 } },
+      { T0001: { id: 'T0001', state: 'unsure', knownStreak: 1, lastStudiedAt: 1 } },
     );
     renderAt('/study/chapter/古代オリエント');
     fireEvent.keyDown(window, { key: 'ArrowRight' });
@@ -105,12 +140,12 @@ describe('StudyScreen の振動', () => {
     // そこで hapticEventForSwipe 自体を spy にして、引数と戻り値を直接検証する。
     seed(
       { order: 'sequential', sessionSize: 3, hapticEnabled: true, masterThreshold: 2 },
-      { 1: { no: 1, state: 'unsure', knownStreak: 1, lastStudiedAt: 1 } },
+      { T0001: { id: 'T0001', state: 'unsure', knownStreak: 1, lastStudiedAt: 1 } },
     );
     renderAt('/study/chapter/古代オリエント');
     fireEvent.keyDown(window, { key: 'ArrowRight' });
     expect(hapticEventForSwipe).toHaveBeenCalledWith(
-      { no: 1, state: 'unsure', knownStreak: 1, lastStudiedAt: 1 }, 'known', 2,
+      { id: 'T0001', state: 'unsure', knownStreak: 1, lastStudiedAt: 1 }, 'known', 2,
     );
     expect(vi.mocked(hapticEventForSwipe).mock.results[0].value).toBe('mastered');
   });
@@ -122,21 +157,21 @@ describe('StudyScreen の振動', () => {
     // 判定後の状態や誤った値を渡すと、この区別が壊れても vibrate のパターン
     // （known と同じ [12]）だけを見るテストでは気づけない。
     //
-    // No.1 のみを mastered にしておく。buildChapterSession は sequential
+    // T0001 のみを mastered にしておく。buildChapterSession は sequential
     // 指定時、未マスター問題とメンテナンス対象（maintenanceRatio: 0.2 で
-    // 混ぜたマスター済み）をまとめて no 昇順に並べ替えるため、No.1 が
-    // マスター済みであっても no が最小なら必ず先頭に来る。
+    // 混ぜたマスター済み）をまとめて id 昇順に並べ替えるため、T0001 が
+    // マスター済みであっても id が最小なら必ず先頭に来る。
     // 章の残り29問は未回答（未マスター扱い）のままなので
     // maintainCount = floor(29 * 0.2) = 5 >= 1 となり、
-    // マスター済みの No.1 は必ずメンテナンス対象として混入する。
+    // マスター済みの T0001 は必ずメンテナンス対象として混入する。
     seed(
       { order: 'sequential', sessionSize: 3, hapticEnabled: true, masterThreshold: 2 },
-      { 1: { no: 1, state: 'mastered', knownStreak: 2, lastStudiedAt: 1 } },
+      { T0001: { id: 'T0001', state: 'mastered', knownStreak: 2, lastStudiedAt: 1 } },
     );
     renderAt('/study/chapter/古代オリエント');
     fireEvent.keyDown(window, { key: 'ArrowRight' });
     expect(hapticEventForSwipe).toHaveBeenCalledWith(
-      { no: 1, state: 'mastered', knownStreak: 2, lastStudiedAt: 1 }, 'known', 2,
+      { id: 'T0001', state: 'mastered', knownStreak: 2, lastStudiedAt: 1 }, 'known', 2,
     );
     expect(vi.mocked(hapticEventForSwipe).mock.results[0].value).toBe('known');
   });
@@ -185,11 +220,11 @@ describe('StudyScreen の振動', () => {
   it('failed モード（できなかった◯問だけ）でも判定で正しく振動が鳴る', () => {
     // これまでの振動テストはすべて /study/chapter/... 経由。
     // /study/failed/... はリザルト画面の「できなかった◯問だけ」の主要導線で、
-    // StudyScreen の initial useMemo 内で loc.state.failedNos から
-    // pickByNumbers を使う別経路（buildChapterSession を通らない）のため、
+    // StudyScreen の initial useMemo 内で loc.state.failedIds から
+    // pickByIds を使う別経路（buildChapterSession を通らない）のため、
     // 別途カバーしないと judge() の振動配線が未検証のまま残る。
     seed({ order: 'sequential', sessionSize: 3, hapticEnabled: true, masterThreshold: 2 });
-    renderAt({ pathname: '/study/failed/古代オリエント', state: { failedNos: [1, 2] } });
+    renderAt({ pathname: '/study/failed/古代オリエント', state: { failedIds: ['T0001', 'T0002'] } });
     fireEvent.keyDown(window, { key: 'ArrowRight' });
     expect(vibrate).toHaveBeenCalledWith(HAPTIC_PATTERNS.known);
   });

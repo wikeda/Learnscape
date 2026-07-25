@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuestions } from '../hooks/useQuestions';
 import { useAppData } from '../state/AppDataContext';
 import { chapterList, countStates, masteryPct, overallMastery } from '../domain/aggregate';
 import { MasteryRing } from '../components/MasteryRing';
@@ -10,13 +9,12 @@ type SortMode = 'weak' | 'chapter';
 
 export function StatsScreen() {
   const nav = useNavigate();
-  const questions = useQuestions();
-  const { data } = useAppData();
+  const { data, questions, progress } = useAppData();
   const chapters = chapterList(questions);
-  const overall = overallMastery(questions, data.progress);
+  const overall = overallMastery(questions, progress);
   const [sort, setSort] = useState<SortMode>('weak');
 
-  const rows = chapters.map((c) => ({ c, pct: masteryPct(countStates(questions, data.progress, c)) }));
+  const rows = chapters.map((c) => ({ c, pct: masteryPct(countStates(questions, progress, c)) }));
   const sorted = sort === 'weak' ? [...rows].sort((a, b) => a.pct - b.pct) : rows;
 
   return (

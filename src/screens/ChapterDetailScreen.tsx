@@ -1,5 +1,4 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuestions } from '../hooks/useQuestions';
 import { useAppData } from '../state/AppDataContext';
 import { countStates, masteryPct } from '../domain/aggregate';
 import { BackButton } from '../components/BackButton';
@@ -8,13 +7,12 @@ import { StackedBarChart } from '../components/StackedBarChart';
 export function ChapterDetailScreen() {
   const { chapter = '' } = useParams();
   const nav = useNavigate();
-  const questions = useQuestions();
-  const { data } = useAppData();
+  const { questions, progress, chapterRounds } = useAppData();
 
   const total = questions.filter((q) => q.chapter === chapter).length;
-  const counts = countStates(questions, data.progress, chapter);
+  const counts = countStates(questions, progress, chapter);
   const pct = masteryPct(counts);
-  const rounds = data.chapterRounds[chapter] ?? [];
+  const rounds = chapterRounds[chapter] ?? [];
   const complete = pct >= 100;
 
   return (

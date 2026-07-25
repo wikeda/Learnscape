@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuestions } from '../hooks/useQuestions';
 import { useAppData } from '../state/AppDataContext';
 import { filterQuestions } from '../domain/browse';
 import { BackButton } from '../components/BackButton';
@@ -21,18 +20,17 @@ const MASK_WIDTH = 96;
 export function QuestionListScreen() {
   const { chapter = '' } = useParams();
   const nav = useNavigate();
-  const questions = useQuestions();
-  const { data } = useAppData();
+  const { questions, progress } = useAppData();
 
   const [hidden, setHidden] = useState(true); // 既定は「解答を隠す」（暗記用途のため）
-  const [revealed, setRevealed] = useState<Set<number>>(new Set());
+  const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [states, setStates] = useState<MasteryState[]>(ALL_STATES);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const total = questions.filter((q) => q.chapter === chapter).length;
   const list = useMemo(
-    () => filterQuestions(questions, data.progress, chapter, states),
-    [questions, data.progress, chapter, states],
+    () => filterQuestions(questions, progress, chapter, states),
+    [questions, progress, chapter, states],
   );
 
   function toggleHidden() {
@@ -40,12 +38,12 @@ export function QuestionListScreen() {
     setRevealed(new Set()); // 一括切替で個別の開閉はリセットする
   }
 
-  function tapRow(no: number) {
+  function tapRow(id: string) {
     if (!hidden) return; // 表示中は無反応
     setRevealed((prev) => {
       const next = new Set(prev);
-      if (next.has(no)) next.delete(no);
-      else next.add(no);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -101,10 +99,10 @@ export function QuestionListScreen() {
       ) : (
         <div style={{ background: 'var(--surface)', borderRadius: 14, boxShadow: 'var(--shadow)', overflow: 'hidden', marginTop: 12 }}>
           {list.map((q, i) => {
-            const state: MasteryState = data.progress[q.no]?.state ?? 'unanswered';
-            const show = !hidden || revealed.has(q.no);
+            const state: MasteryState = progress[q.id]?.state ?? 'unanswered';
+            const show = !hidden || revealed.has(q.id);
             return (
-              <div key={q.no} onClick={() => tapRow(q.no)}
+              <div key={q.id} onClick={() => tapRow(q.id)}
                 style={{ padding: '11px 13px', display: 'flex', gap: 9,
                   borderBottom: i < list.length - 1 ? '1px solid var(--border)' : 'none',
                   cursor: hidden ? 'pointer' : 'default' }}>
