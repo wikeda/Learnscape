@@ -12,6 +12,7 @@ export const DEFAULT_SETTINGS: Settings = {
   masterThreshold: 2,    // 覚えた2回連続でマスター
   soundEnabled: false,
   hapticEnabled: true,
+  showSections: true,
 };
 
 export function defaultAppData(): AppData {

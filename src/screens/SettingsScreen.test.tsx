@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { AppDataProvider } from '../state/AppDataContext';
 import { SettingsScreen } from './SettingsScreen';
 
@@ -34,7 +34,8 @@ describe('SettingsScreen の振動フィードバック', () => {
 
   it('OFFを押すと設定に保存される', () => {
     renderScreen();
-    fireEvent.click(screen.getByText('OFF'));
+    const row = screen.getByText('振動フィードバック').parentElement!;
+    fireEvent.click(within(row).getByText('OFF'));
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
     expect(saved.settings.hapticEnabled).toBe(false);
   });
@@ -49,6 +50,23 @@ describe('SettingsScreen の振動フィードバック', () => {
     Reflect.deleteProperty(navigator, 'vibrate');
     renderScreen();
     expect(screen.getByText(NOTE)).toBeInTheDocument();
+  });
+});
+
+describe('SettingsScreen の区分表示', () => {
+  it('項目が表示され、既定はONである', () => {
+    renderScreen();
+    expect(screen.getByText('区分表示')).toBeInTheDocument();
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(saved.settings.showSections).toBe(true);
+  });
+
+  it('OFFにすると設定に保存される', () => {
+    renderScreen();
+    const row = screen.getByText('区分表示').parentElement!;
+    fireEvent.click(within(row).getByText('OFF'));
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)!);
+    expect(saved.settings.showSections).toBe(false);
   });
 });
 
