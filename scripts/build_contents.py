@@ -12,7 +12,7 @@ DL = r'C:/Users/500886/Downloads'
 JOBS = [
     # 日本史は解答修正済みの「修正版」を最新として使用する
     dict(xlsx=f'{DL}/大学入試_日本史_時代別問題集_1500問_修正版.xlsx', id='japanese-history', title='日本史'),
-    dict(xlsx=f'{DL}/大学入試_世界史_時代別問題集_2100問.xlsx', id='world-history', title='世界史'),
+    dict(xlsx=f'{DL}/大学入試_世界史_時代別問題集_2100問_修正版.xlsx', id='world-history', title='世界史'),
 ]
 
 def clean(v):
@@ -51,7 +51,8 @@ def main():
     for job in JOBS:
         content = build(job)
         path = os.path.join(OUT_DIR, f"{job['id']}.json")
-        with open(path, 'w', encoding='utf-8') as f:
+        # 改行は LF 固定（Windowsのテキストモードによる CRLF 混入を防ぎ、gitの差分ノイズを避ける）
+        with open(path, 'w', encoding='utf-8', newline='\n') as f:
             json.dump(content, f, ensure_ascii=False, indent=2)
         print(f"{job['title']}: {len(content['questions'])}問 -> {path}")
 
