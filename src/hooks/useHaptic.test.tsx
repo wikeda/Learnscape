@@ -11,7 +11,13 @@ function setVibrate(fn: unknown) {
 }
 
 function seedSettings(settings: Record<string, unknown>) {
-  localStorage.setItem('whq:data', JSON.stringify({ settings }));
+  localStorage.setItem('learnscape:data', JSON.stringify({
+    version: 2,
+    activeContentId: 'world-history',
+    importedContents: [],
+    byContent: {},
+    settings,
+  }));
 }
 
 function wrapper({ children }: { children: React.ReactNode }) {
