@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { applySwipe, initialProgress } from './mastery';
 
-const base = initialProgress(1);
+const base = initialProgress('S0001');
+
+describe('initialProgress', () => {
+  it('id を保持した unanswered 状態を返す', () => {
+    const p = initialProgress('S0001');
+    expect(p.id).toBe('S0001');
+    expect(p.state).toBe('unanswered');
+  });
+});
 
 describe('applySwipe', () => {
   it('failed にすると state=failed, streak=0', () => {
@@ -36,7 +44,7 @@ describe('applySwipe', () => {
   });
 
   it('mastered を failed で叩くと failed に戻り streak リセット', () => {
-    const mastered = { no: 1, state: 'mastered' as const, knownStreak: 2, lastStudiedAt: 1 };
+    const mastered = { id: 'S0001', state: 'mastered' as const, knownStreak: 2, lastStudiedAt: 1 };
     const r = applySwipe(mastered, 'failed', 2, 5);
     expect(r.state).toBe('failed');
     expect(r.knownStreak).toBe(0);
