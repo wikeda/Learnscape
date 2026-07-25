@@ -1,7 +1,8 @@
 import type { AppData, Settings } from '../domain/types';
 import { emptyStreak } from '../domain/streak';
+import { DEFAULT_CONTENT_ID } from '../data/contents';
 
-export const DATA_VERSION = 1;
+export const DATA_VERSION = 2;
 
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
@@ -16,8 +17,9 @@ export const DEFAULT_SETTINGS: Settings = {
 export function defaultAppData(): AppData {
   return {
     version: DATA_VERSION,
-    progress: {},
-    chapterRounds: {},
+    activeContentId: DEFAULT_CONTENT_ID,
+    importedContents: [],
+    byContent: {},
     streak: emptyStreak(),
     settings: { ...DEFAULT_SETTINGS },
   };
